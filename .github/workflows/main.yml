@@ -1,0 +1,170 @@
+name: CI
+
+on: [push]
+
+env:
+  BUILD_NAME: DeeperSkeeper
+  UNITY_LICENSE_CONTENT: ${{ secrets.UNITY_LICENSE_CONTENT }}
+  UNITY_ACTIVATION_FILE: ./unity3d.alf
+  GIT_LFS_SKIP_SMUDGE: 1
+
+jobs:
+  Run_Tests:
+    runs-on: ubuntu-latest
+    container: gableroux/unity3d:2019.2.11f1
+    steps:
+    - name: install-curl
+      run: |
+        apt-get update && apt-get install -y curl
+    - name: install-lfs
+      run: |
+        curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+        apt-get install git-lfs
+    - uses: actions/checkout@v1
+      with:
+        lfs: false
+    - name: Chown
+      run: chown -R root:root $HOME/
+    - name: CalculateCacheKey
+      run: git lfs ls-files -l | cut -d' ' -f1 | sort > .asset-id
+    - name: restore-cache
+      id: restore-cache
+      uses: actions/cache@v1
+      with:
+        path: .git/lfs
+        key: v3-cache-lfs-key-${{ hashFiles('.asset-id') }}
+    - name: lfs-fetch
+      if: steps.restore-cache.outputs.cache-hit != 'true'
+      run: git lfs fetch
+    - name: lfs-checkout
+      run: git lfs checkout
+    - name: Before
+      run: chmod +x ./ci/before_script.sh && ./ci/before_script.sh
+    - name: Edit mode tests
+      run: chmod +x ./ci/test.sh && ./ci/test.sh
+      env:
+        TEST_PLATFORM: editmode
+    - name: Play mode tests
+      run: chmod +x ./ci/test.sh && ./ci/test.sh
+      env:
+        TEST_PLATFORM: playmode
+
+  Build_StandaloneLinux64:
+    runs-on: ubuntu-latest
+    container: gableroux/unity3d:2019.2.11f1
+    steps:
+    - name: install-curl
+      run: |
+        apt-get update && apt-get install -y curl
+    - name: install-lfs
+      run: |
+        curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+        apt-get install git-lfs
+    - uses: actions/checkout@v1
+      with:
+        lfs: false
+    - name: Chown
+      run: chown -R root:root $HOME/
+    - name: CalculateCacheKey
+      run: git lfs ls-files -l | cut -d' ' -f1 | sort > .asset-id
+    - name: restore-cache
+      id: restore-cache
+      uses: actions/cache@v1
+      with:
+        path: .git/lfs
+        key: v3-cache-lfs-key-${{ hashFiles('.asset-id') }}
+    - name: lfs-fetch
+      if: steps.restore-cache.outputs.cache-hit != 'true'
+      run: git lfs fetch
+    - name: lfs-checkout
+      run: git lfs checkout
+    - name: Before
+      run: chmod +x ./ci/before_script.sh && ./ci/before_script.sh
+    - name: Build StandaloneLinux64
+      run: chmod +x ./ci/build.sh && ./ci/build.sh
+      env:
+        BUILD_TARGET: StandaloneLinux64
+    - uses: actions/upload-artifact@v1
+      with:
+        name: LinuxBuild
+        path: ./Builds/StandaloneLinux64/
+
+  Build_StandaloneWindows64:
+    runs-on: ubuntu-latest
+    container: gableroux/unity3d:2019.2.11f1-windows
+    steps:
+    - name: install-curl
+      run: |
+        apt-get update && apt-get install -y curl
+    - name: install-lfs
+      run: |
+        curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+        apt-get install git-lfs
+    - uses: actions/checkout@v1
+      with:
+        lfs: false
+    - name: Chown
+      run: chown -R root:root $HOME/
+    - name: CalculateCacheKey
+      run: git lfs ls-files -l | cut -d' ' -f1 | sort > .asset-id
+    - name: restore-cache
+      id: restore-cache
+      uses: actions/cache@v1
+      with:
+        path: .git/lfs
+        key: v3-cache-lfs-key-${{ hashFiles('.asset-id') }}
+    - name: lfs-fetch
+      if: steps.restore-cache.outputs.cache-hit != 'true'
+      run: git lfs fetch
+    - name: lfs-checkout
+      run: git lfs checkout
+    - name: Before
+      run: chmod +x ./ci/before_script.sh && ./ci/before_script.sh
+    - name: Build StandaloneWindows64
+      run: chmod +x ./ci/build.sh && ./ci/build.sh
+      env:
+        BUILD_TARGET: StandaloneWindows64
+    - uses: actions/upload-artifact@v1
+      with:
+        name: WindowsBuild
+        path: ./Builds/StandaloneWindows64/
+
+  Build_StandaloneOSX:
+    runs-on: ubuntu-latest
+    container: gableroux/unity3d:2019.2.11f1-mac
+    steps:
+    - name: install-curl
+      run: |
+        apt-get update && apt-get install -y curl
+    - name: install-lfs
+      run: |
+        curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+        apt-get install git-lfs
+    - uses: actions/checkout@v1
+      with:
+        lfs: false
+    - name: Chown
+      run: chown -R root:root $HOME/
+    - name: CalculateCacheKey
+      run: git lfs ls-files -l | cut -d' ' -f1 | sort > .asset-id
+    - name: restore-cache
+      id: restore-cache
+      uses: actions/cache@v1
+      with:
+        path: .git/lfs
+        key: v3-cache-lfs-key-${{ hashFiles('.asset-id') }}
+    - name: lfs-fetch
+      if: steps.restore-cache.outputs.cache-hit != 'true'
+      run: git lfs fetch
+    - name: lfs-checkout
+      run: git lfs checkout
+    - name: Before
+      run: chmod +x ./ci/before_script.sh && ./ci/before_script.sh
+    - name: Build StandaloneOSX
+      run: chmod +x ./ci/build.sh && ./ci/build.sh
+      env:
+        BUILD_TARGET: StandaloneOSX
+    - uses: actions/upload-artifact@v1
+      with:
+        name: OSXBuild
+        path: ./Builds/StandaloneOSX/
